@@ -1,11 +1,18 @@
-angular.module('Instagram')
+angular.module('GitApp')
 	.controller('DetailCtrl', function($scope, $rootScope, $location, API) {
 
-		var mediaId = $location.path().split('/').pop();
+		var repoName = $location.path().split('/').pop();
 
-		API.getMediaById(mediaId).success(function(media) {
-			$scope.hasLiked = media.user_has_liked;
-			$scope.photo = media;
+		API.getStatsByRepo(repoName).success(function(data) {
+			$scope.contributers = [];
+			for(var i=0; i<data.profile.length; i++) {
+				$scope.contributers.push({
+					'displayName': data.profile[i].author.login,
+					'total': data.profile[i].total
+				});
+			}
+
+			console.log($scope.contributers);
 		});
 
 		$scope.like = function() {

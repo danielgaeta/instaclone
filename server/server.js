@@ -7,44 +7,39 @@ var moment = require('moment');
 var mongoose = require('mongoose');
 var path = require('path');
 var request = require('request');
-var compress = require('compression');
+var qs = require('qs');
 
-var config = require('./config')
+var config = require('./config');
 
 var User = mongoose.model('User', new mongoose.Schema({
-	instagramId: { type: String, index: true },
-	email: { type: String, unique: true, lowercase: true},
-	password: { type: String, select: false },
-	username: String, 
-	fullName: String,
-	picture: String,
-	accessToken: String
+  github: { type: String, index: true },
+  email: { type: String, unique: true, lowercase: true },
+  password: { type: String, select: false },
+  displayName: String,
+  username: String,
+  fullName: String,
+  picture: String,
+  accessToken: String
 }));
-
+ 
 mongoose.connect(config.MONGO_URI);
  
 var app = express();
-
-var corsOptions = {
-  origin: 'http://localhost:8000'
-};
  
 app.set('port', process.env.PORT || 3000);
-app.use(compress());
 app.use(cors({credentials: true, origin: true}));
-//app.options('true', cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
-app.use(express.static(path.join(__dirname, 'public'), { maxAge: 2628000000 }));
+app.use(express.static(path.join(__dirname, 'public')));
 
-function createToken(user) {
-	var payload = {
-		exp: moment().add(14, 'days').unix(),
-		iat: moment().unix(),
-		sub: user._id
-	};
-
-	return jwt.encode(payload, config.tokenSecret);
+function createJWT(user) {
+  var payload = {
+    exp: moment().add(14, 'days').unix(),
+    iat: moment().unix(),
+    sub: user._id
+  };
+ 
+  return jwt.encode(payload, config.tokenSecret);
 }
 
 function isAuthenticated(req, res, next) {
@@ -71,28 +66,27 @@ function isAuthenticated(req, res, next) {
   })
 }
 
-app.post('/auth/login',  function(req, res) {
-	User.findOne({ email: req.body.email }, '+password', function(err, user) {
-		if(!user) {
-			return res.status(401).send({ message: { email: 'Incorrect email' } });
-		}
-
-		bcrypt.compare(req.body.password, user.password, function(err, isMatch) {
-			if (!isMatch) {
-				return res.status(401).send({ message: { password: 'Incorrect password' } });
-			}
-
-			user = user.toObject();
-			delete user.password;
-
-			var token = createToken(user);
-			res.send({ token: token, user:user });
-		});
-	});
+app.post('/auth/login', function(req, res) {
+  User.findOne({ email: req.body.email }, ' password', function(err, user) {
+    if (!user) {
+      return res.status(401).send({ message: { email: 'Incorrect email' } });
+    }
+ 
+    bcrypt.compare(req.body.password, user.password, function(err, isMatch) {
+      if (!isMatch) {
+        return res.status(401).send({ message: { password: 'Incorrect password' } });
+      }
+ 
+      user = user.toObject();
+      delete user.password;
+ 
+      var token = createToken(user);
+      res.send({ token: token, user: user });
+    });
+  });
 });
 
-
-app.post('/auth/signup',  function(req, res) {
+app.post('/auth/signup', function(req, res) {
   User.findOne({ email: req.body.email }, function(err, existingUser) {
     if (existingUser) {
       return res.status(409).send({ message: 'Email is already taken.' });
@@ -116,102 +110,84 @@ app.post('/auth/signup',  function(req, res) {
   });
 });
 
-
-app.post('/auth/instagram', function(req, res) {
-  var accessTokenUrl = 'https://api.instagram.com/oauth/access_token';
- 
+/*
+ |--------------------------------------------------------------------------
+ | Login with GitHub
+ |--------------------------------------------------------------------------
+ */
+app.post('/auth/github', function(req, res) {
+  var accessTokenUrl = 'https://github.com/login/oauth/access_token';
+  var userApiUrl = 'https://api.github.com/user';
   var params = {
-    client_id: req.body.clientId,
-    redirect_uri: req.body.redirectUri,
-    client_secret: config.clientSecret,
     code: req.body.code,
-    grant_type: 'authorization_code'
+    client_id: req.body.clientId,
+    client_secret: config.GITHUB_SECRET,
+    redirect_uri: req.body.redirectUri
   };
- 
+
   // Step 1. Exchange authorization code for access token.
-  request.post({ url: accessTokenUrl, form: params, json: true }, function(error, response, body) {
-    console.log(body);
-    // Step 2a. Link user accounts.
-    if (req.headers.authorization && body.user) {
- 
-      User.findOne({ instagramId: body.user.id }, function(err, existingUser) {
- 
-        var token = req.headers.authorization.split(' ')[1];
-        var payload = jwt.decode(token, config.tokenSecret);
- 
-        User.findById(payload.sub, '+password', function(err, localUser) {
-          if (!localUser) {
-            return res.status(400).send({ message: 'User not found.' });
-          }
- 
-          // Merge two accounts.
+  request.get({ url: accessTokenUrl, qs: params }, function(err, response, accessToken) {
+    accessToken = qs.parse(accessToken);
+    var headers = { 'User-Agent': 'Satellizer' };
+
+    // Step 2. Retrieve profile information about the current user.
+    request.get({ url: userApiUrl, qs: accessToken, headers: headers, json: true }, function(err, response, profile) {
+
+      // Step 3a. Link user accounts.
+      if (req.headers.authorization) {
+        User.findOne({ github: profile.id }, function(err, existingUser) {
           if (existingUser) {
- 
-            existingUser.email = localUser.email;
-            existingUser.password = localUser.password;
- 
-            localUser.remove();
- 
-            existingUser.save(function() {
-              var token = createToken(existingUser);
-              return res.send({ token: token, user: existingUser });
-            });
- 
-          } else {
-            // Link current email account with the Instagram profile information.
-            localUser.instagramId = body.user.id;
-            localUser.username = body.user.username;
-            localUser.fullName = body.user.full_name;
-            localUser.picture = body.user.profile_picture;
-            localUser.accessToken = body.access_token;
- 
-            localUser.save(function() {
-              var token = createToken(localUser);
-              res.send({ token: token, user: localUser });
-            });
- 
+            return res.status(409).send({ message: 'There is already a GitHub account that belongs to you' });
           }
+          var token = req.headers.authorization.split(' ')[1];
+          var payload = jwt.decode(token, config.TOKEN_SECRET);
+          User.findById(payload.sub, function(err, user) {
+            if (!user) {
+              return res.status(400).send({ message: 'User not found' });
+            }
+            user.github = profile.id;
+            user.picture = user.picture || profile.avatar_url;
+            user.displayName = user.displayName || profile.name;
+            user.save(function() {
+              var token = createJWT(user);
+              res.send({ token: token });
+            });
+          });
         });
-      });
-    } else {
-      // Step 2b. Create a new user account or return an existing one.
-      User.findOne({ instagramId: body.user.id }, function(err, existingUser) {
-        if (existingUser) {
-          var token = createToken(existingUser);
-          return res.send({ token: token, user: existingUser });
-        }
- 
-        var user = new User({
-          instagramId: body.user.id,
-          username: body.user.username,
-          fullName: body.user.full_name,
-          picture: body.user.profile_picture,
-          accessToken: body.access_token
+      } else {
+        // Step 3b. Create a new user account or return an existing one.
+        User.findOne({ github: profile.id }, function(err, existingUser) {
+          if (existingUser) {
+            var token = createJWT(existingUser);
+            return res.send({ token: token });
+          }
+          var user = new User();
+          user.github = profile.id;
+          user.picture = profile.avatar_url;
+          user.displayName = profile.name;
+          user.save(function() {
+            var token = createJWT(user);
+            res.send({ token: token });
+          });
         });
- 
-        user.save(function() {
-          var token = createToken(user);
-          res.send({ token: token, user: user });
-        });
-      });
-    }
+      }
+    });
   });
 });
 
-app.get('/api/feed', isAuthenticated, function(req, res) {
-  var feedUrl = 'https://api.instagram.com/v1/users/self/feed';
+app.get('/api/repos', isAuthenticated, function(req, res) {
+  var reposUrl = 'https://api.github.com/orgs/uptaketech/repos';
   var params = { access_token: req.user.accessToken };
  
-  request.get({ url: feedUrl, qs: params, json: true }, function(error, response, body) {
+  request.get({ url: reposUrl, qs: params, json: true }, function(error, response, body) {
     if (!error && response.statusCode == 200) {
       res.send(body.data);
     }
   });
 });
 
-
-app.get('/api/media/:id', isAuthenticated, function(req, res, next) {
-  var mediaUrl = 'https://api.instagram.com/v1/media/' + req.params.id;
+app.get('/api/commits/:repo', isAuthenticated, function(req, res, next) {
+  var Url = 'https://api.github.com/orgs/uptaketech/repos' + req.params.id;
   var params = { access_token: req.user.accessToken };
  
   request.get({ url: mediaUrl, qs: params, json: true }, function(error, response, body) {
@@ -220,24 +196,6 @@ app.get('/api/media/:id', isAuthenticated, function(req, res, next) {
     }
   });
 });
-
-
-app.post('/api/like', isAuthenticated, function(req, res, next) {
-  var mediaId = req.body.mediaId;
-  var accessToken = { access_token: req.user.accessToken };
-  var likeUrl = 'https://api.instagram.com/v1/media/' + mediaId + '/likes';
- 
-  request.post({ url: likeUrl, form: accessToken, json: true }, function(error, response, body) {
-    if (response.statusCode !== 200) {
-      return res.status(response.statusCode).send({
-        code: response.statusCode,
-        message: body.meta.error_message
-      });
-    }
-    res.status(200).end();
-  });
-});
-
 
  
 app.listen(app.get('port'), function() {

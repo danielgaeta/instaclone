@@ -2,17 +2,17 @@
 1 verbose cli [ 'node', '/usr/local/bin/npm', 'start' ]
 2 info using npm@2.7.4
 3 info using node@v0.12.2
-4 verbose stack Error: ENOENT, open '/Users/dgaeta/Documents/Code/instagram/server/package.json'
+4 verbose stack Error: ENOENT, open '/Users/dgaeta/Documents/Code/uptake-github/package.json'
 4 verbose stack     at Error (native)
-5 verbose cwd /Users/dgaeta/Documents/Code/instagram/server
+5 verbose cwd /Users/dgaeta/Documents/Code/uptake-github
 6 error Darwin 14.3.0
 7 error argv "node" "/usr/local/bin/npm" "start"
 8 error node v0.12.2
 9 error npm  v2.7.4
-10 error path /Users/dgaeta/Documents/Code/instagram/server/package.json
+10 error path /Users/dgaeta/Documents/Code/uptake-github/package.json
 11 error code ENOENT
 12 error errno -2
-13 error enoent ENOENT, open '/Users/dgaeta/Documents/Code/instagram/server/package.json'
+13 error enoent ENOENT, open '/Users/dgaeta/Documents/Code/uptake-github/package.json'
 13 error enoent This is most likely not a problem with npm itself
 13 error enoent and is related to npm not being able to find a file.
 14 verbose exit [ -2, true ]

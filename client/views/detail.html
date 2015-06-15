@@ -1,44 +1,8 @@
 <div class="container">
-
-	<div class="panel panel-default">
-		<div class="panel-body">
-			<div class="row">
-
-				<div class="col-xs-6">
-					<img ng-src="{{photo.images.standard_resolution.url}}" class="img-responsive">
-				</div>
-
-				<div class="col-xs-6">
-					<div class="caption">
-						<h5><a href="http://instagram.com/{{photo.user.username}}">{{photo.user.username}}</a></h5>
-						<h6 class="text-muted"><i class="ion-clock"></i> {{photo.created_time * 1000 | date:'short'}} </h6>
-
-						<p>{{photo.caption.text}}</p>
-
-					</div>
-				</div>
-
-			</div>
-
-			<div class="row">
-
-				<div class="col-xs-12">
-					<h5><i class="ion-heart text-danger"></i> {{photo.likes.count }} likes</h5>
-
-					<hr class="soften">
-
-					<div class="btn-group">
-						<button class="btn" ng-class="{ 'btn-danger': hasLiked, 'btn-default': !hasLiked }" ng-click="like()">
-							<i class="ion-heart" ng-class="{ 'text-danger': !hasLiked}"></i>
-							<span ng-if="hasLiked">Liked</span>
-							<span ng-if="!hasLiked">Like</span>
-						</button>
-					</div>
-					
-				</div>
-			</div>
-
-		</div>
-	</div>
-
+    <div class="row">
+      <div ng-repeat="contributer in contributers" class="col-lg-2 col-sm-3 col-xs-4">
+        <p>{{contributer.displayName}}</p>
+        <p>{{contributer.total}}</p>
+      </div>
+    </div>
 </div>

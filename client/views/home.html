@@ -1,34 +1,35 @@
 <div class="container">
  
-  <div ng-if="isAuthenticated() && currentUser.username">
+<!--   <div ng-if="isAuthenticated() && currentUser.displayName">
     <div class="row">
-      <div ng-repeat="photo in photos" class="col-lg-2 col-sm-3 col-xs-4">
-        <a href="#/photo/{{photo.id}}">
-          <img ng-src="{{photo.images.standard_resolution.url}}" class="thumbnail img-responsive">
-        </a>
+      <div ng-repeat="repo in repos" class="col-lg-2 col-sm-3 col-xs-4">
+        <a href="#/repo/{{repo.name}}">
+          <p>{{repo.name}}</p>
+        </a> 
       </div>
+      <p>hello</p>
     </div>
-  </div>
+  </div> -->
  
-  <div ng-if="!isAuthenticated()">
+  <!-- <div ng-if="!isAuthenticated()">
     <div class="jumbotron">
-      <h2><i class="ion-images"></i> Instagram</h2>
-      <p>This is a basic Instagram clone powered by <strong>Satellizer</strong>. To continue, please log in with your Instagram account or create a new email account.</p>
+      <h2><i class="ion-social-github"></i> Uptake Leaderboard</h2>
+      <p>Where git <strong>commits</strong> earn you glory. To continue, please log in with your github account or create a new email account.</p>
       <p>
-        <a class="btn btn-lg btn-success" ui-sref="#/login"><i class="ion-log-in"></i> Log in</a>
-        <a class="btn btn-lg btn-primary" ui-sref="#/signup"><i class="ion-person-add"></i> Create account</a>
+        <a class="btn btn-lg btn-success" href="#/login"><i class="ion-log-in"></i> Log in</a>
+        <a class="btn btn-lg btn-primary" href="#/signup"><i class="ion-person-add"></i> Create account</a>
       </p>
     </div>
-  </div>
+  </div> -->
  
-  <div ng-if="isAuthenticated() && !currentUser.username" class="center-form panel">
+  <!-- <div ng-if="isAuthenticated() && !currentUser.displayName" class="center-form panel">
     <div class="panel-body">
       <h5 class="text-center"><i class="ion-link"></i> Link Account</h5>
-      <p>To complete the registration process you must link your Instagram account.</p>
-      <button class="btn btn-block btn-instagram" ng-click="linkInstagram()">
-        <i class="ion-social-instagram"></i> Sign in with Instagram
+      <p>To complete the registration process you must link your Github account.</p>
+      <button class="btn btn-block btn-instagram" ng-click="linkGithub()">
+        <i class="ion-social-github"></i> Sign in with Github
       </button>
     </div>
-  </div>
+  </div> -->
  
 </div>

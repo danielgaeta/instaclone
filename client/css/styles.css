@@ -100,8 +100,8 @@ a:hover {
   border: 1px solid #456c8c;
 }
  
-.btn-instagram:hover,
-.btn-instagram:focus {
+.btn-github:hover,
+.btn-github:focus {
   color: #fff;
   background-color: #303030;
 }
